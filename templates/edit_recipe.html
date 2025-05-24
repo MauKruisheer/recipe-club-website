@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- Bootstrap 5 CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Edit Recipe</title>
+</head>
+<body>
+    <h2>Edit Recipe</h2>
+
+    <form method="POST">
+        <label for="title">Title:</label><br>
+        <input type="text" name="title" value="{{ recipe.title }}" required><br><br>
+
+        <label for="ingredients">Ingredients:</label><br>
+        <textarea name="ingredients" required>{{ recipe.ingredients }}</textarea><br><br>
+
+        <label for="instructions">Instructions:</label><br>
+        <textarea name="instructions" required>{{ recipe.instructions }}</textarea><br><br>
+
+        <label><input type="checkbox" name="is_public" {% if recipe.is_public %}checked{% endif %}> Make Public</label><br><br>
+
+        <button type="submit">Save Changes</button>
+    </form>
+
+    <br><a href="{{ url_for('home') }}">Back to My Profile</a>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
