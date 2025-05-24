@@ -15,7 +15,8 @@ from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 
 from models import db, User, Recipe, Rating
-from utils import fetch_opengraph_metadata  # if you’re using OG fetch
+from utils import extract_jsonld_recipe, scrape_recipe, fetch_opengraph_metadata 
+
 import csv
 
 load_dotenv()
@@ -315,12 +316,16 @@ def reset_password(token):
 @app.route("/upload-from-url", methods=["POST"])
 @login_required
 def upload_from_url():
-    recipe_url = request.form["recipe_url"]
-    session["prefill_url"]   = recipe_url
-    metadata                 = fetch_opengraph_metadata(recipe_url)
-    session["preview_metadata"] = metadata
-    flash("Recipe URL received! Auto-importing coming soon.", "info")
+    url = request.form["recipe_url"]
+    data = extract_jsonld_recipe(url) or scrape_recipe(url)
+    if data:
+        session["prefill_data"] = data
+        flash("Recipe data imported! Adjust below before saving.", "success")
+    else:
+        flash("Sorry, couldn’t scrape that page.", "warning")
     return redirect(url_for("upload"))
+
+
 
 
 if __name__ == "__main__":
