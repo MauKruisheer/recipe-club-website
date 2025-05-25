@@ -3,18 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <title>Upload Recipe</title>
-  <!-- Bootstrap 5 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
         rel="stylesheet">
   <style>
     body { background: #f8f9fa; }
-    .step-input { margin-bottom: 0.75rem; }
-    .form-section { display: grid; grid-template-columns: 1fr 300px; gap: 2rem; }
+    .step-input {
+      margin-bottom: 0.75rem;
+      position: relative;
+      display: flex;
+      align-items: flex-start;
+    }
+    .step-input .remove-btn {
+      position: absolute;
+      top: 0.25rem;
+      right: 0.25rem;
+      background: transparent;
+      border: none;
+      font-size: 1.25rem;
+      color: #dc3545;
+      cursor: pointer;
+    }
+    .form-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
     .pan-image {
       background: url('/static/images/ramen.jpg') no-repeat center center;
       background-size: cover;
-      height: 100%;
-      min-height: 400px;
+      width: 100%;
+      height: 600px;
       border-radius: 6px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
@@ -22,140 +40,131 @@
 </head>
 <body>
   <div class="container py-5">
-    <div class="row g-4">
-      <!-- FORM COLUMN -->
-      <div class="col-lg-6">
-        <h2 class="mb-4">Upload a Recipe</h2>
+    <h2 class="mb-4">Add a Recipe</h2>
 
-        {% if prefill_data %}
-          <div class="alert alert-info">
-            <strong>Imported “{{ prefill_data.title }}”</strong><br>
-            <small>You can tweak any field before saving.</small>
-          </div>
-        {% endif %}
-
+    <div class="form-section">
+      <div>
+        {# only show flash messages (e.g. your “Imported from Jamie Oliver!”), not the upload confirmation #}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, msg in messages %}
+              <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ msg }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+      
         <form method="POST">
           <!-- Title -->
           <div class="mb-3">
-            <label class="form-label">Title:</label>
-            <input type="text" name="title"
-                   class="form-control"
-                   value="{{ prefill_data.title if prefill_data else '' }}"
-                   required>
+            <label class="form-label">Title</label>
+            <input type="text" name="title" class="form-control"
+                   value="Super Spinach Pancakes" required>
           </div>
 
-          <!-- Ingredients -->
-          <h5>Ingredients</h5>
-          <div id="ingredients-container">
-            {% if prefill_data %}
-              {% for ing in prefill_data.ingredients %}
-                <div class="step-input d-flex" data-step="{{ loop.index }}">
-                  <input type="text" name="ingredients"
-                         class="form-control"
-                         value="{{ ing }}"
-                         required>
-                </div>
-              {% endfor %}
-            {% else %}
-              <div class="step-input d-flex" data-step="1">
-                <input type="text" name="ingredients"
-                       class="form-control"
-                       placeholder="e.g. 2 cups flour"
-                       required>
-              </div>
-            {% endif %}
-          </div>
-          <button type="button"
-                  class="btn btn-sm btn-outline-primary mb-4"
-                  onclick="addIngredient()">
-            + Add another ingredient
-          </button>
+           <!-- Ingredients -->
+           <h5>Ingredients</h5>
+           <div id="ingredients-container">
+             {% if prefill and prefill.ingredients %}
+               {% for item in prefill.ingredients %}
+               <div class="step-input" data-step="{{ loop.index }}">
+                 <input type="text" name="ingredient[]" class="form-control me-2"
+                        value="{{ item }}" required>
+                 <button type="button" class="remove-btn" onclick="removeStep(this)">&times;</button>
+               </div>
+               {% endfor %}
+             {% else %}
+               <div class="step-input" data-step="1">
+                 <input type="text" name="ingredient[]" class="form-control me-2"
+                        placeholder="e.g. 2 cups flour" required>
+                 <button type="button" class="remove-btn" onclick="removeStep(this)">&times;</button>
+               </div>
+             {% endif %}
+           </div>
+           <button type="button" class="btn btn-sm btn-outline-primary mb-4"
+                   onclick="addIngredient()">+ Add Ingredient</button>
 
-          <!-- Instructions -->
-          <h5>Instructions</h5>
+          <!-- Method -->
+          <h5>Method</h5>
           <div id="instructions-container">
-            {% if prefill_data %}
-              {% for step in prefill_data.instructions %}
-                <div class="step-input" data-step="{{ loop.index }}">
-                  <textarea name="instructions"
-                            class="form-control"
-                            rows="2"
-                            required>{{ step }}</textarea>
-                </div>
-              {% endfor %}
-            {% else %}
-              <div class="step-input" data-step="1">
-                <textarea name="instructions"
-                          class="form-control"
-                          rows="2"
-                          placeholder="Step 1"
-                          required></textarea>
-              </div>
-            {% endif %}
+            {% set demo = "Halve, destone, peel and finely slice the avocado and quarter the tomatoes, then place in a salad bowl with a quarter of the spinach. Trim, finely slice and add the spring onions and pick in the coriander leaves, then squeeze over the lime juice. Drizzle with 1 tablespoon of extra virgin olive oil, season to perfection with sea salt and black pepper, toss to coat and put aside. Crack the egg into a blender, add the flour, milk, remaining spinach and a pinch of salt and pepper, then blitz until smooth. Place a large non stick frying pan on a medium heat, rub the pan with a little olive oil, then pour in a thin layer of batter, swirling it up and around the edges. Cook on one side only for 2 minutes, or until lightly golden, then stack up on a serving plate and repeat. Top each pancake with dollops of cottage cheese, the avocado salad, and a few good shakes of chilli sauce. Really nice served with extra lime wedges for squeezing over, and a fried egg on top, if you fancy." %}
+            {% for sentence in demo.split('.') if sentence.strip() %}
+            <div class="step-input" data-step="{{ loop.index }}">
+              <textarea name="instruction[]" class="form-control mb-2" rows="2">{{ sentence.strip() }}.</textarea>
+              <button type="button" class="remove-btn" onclick="removeStep(this)">
+                &times;
+              </button>
+            </div>
+            {% endfor %}
           </div>
-          <button type="button"
-                  class="btn btn-sm btn-outline-primary mb-4"
-                  onclick="addInstruction()">
-            + Add another step
-          </button>
+          <button type="button" class="btn btn-sm btn-outline-primary mb-4"
+                  onclick="addInstruction()">+ Add Step</button>
 
           <!-- Public Checkbox -->
           <div class="form-check mb-4">
-            <input class="form-check-input" type="checkbox"
-                   name="is_public" id="is_public" checked>
-            <label class="form-check-label" for="is_public">
-              Make Public
-            </label>
+            <input class="form-check-input" type="checkbox" name="is_public"
+                   id="is_public" checked>
+            <label class="form-check-label" for="is_public">Make Public</label>
           </div>
 
-          <!-- Submit -->
-          <button type="submit" class="btn btn-success">Upload Recipe</button>
+          <button class="btn btn-success">Upload Recipe</button>
           {% if message %}
-            <div class="mt-3 alert alert-success">{{ message }}</div>
+          <div class="mt-3 alert alert-success">{{ message }}</div>
           {% endif %}
-
           <div class="mt-3">
             <a href="{{ url_for('profile') }}">← Back to My Profile</a>
           </div>
         </form>
       </div>
 
-      <!-- IMAGE COLUMN -->
-      <div class="col-lg-6 d-none d-lg-block">
-        <div class="pan-image"></div>
+      <!-- Image Column -->
+      <div>
+        <div class="pan-image"
+             style="background-image:
+               url('{{ prefill.image if prefill and prefill.image else "/static/images/ramen.jpg" }}');
+                   background-size: cover;">
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Bootstrap JS + dynamic-step script -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
-  </script>
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     function addIngredient() {
-      const container = document.getElementById('ingredients-container');
-      const idx = container.children.length + 1;
-      const div = document.createElement('div');
-      div.className = 'step-input d-flex'; div.dataset.step = idx;
-      div.innerHTML = `
-        <input type="text" name="ingredients"
-               class="form-control"
-               placeholder="e.g. 2 cups flour"
-               required>`;
+      const container = document.getElementById('ingredients-container'),
+            idx       = container.children.length + 1,
+            div       = document.createElement('div');
+      div.className    = 'step-input';
+      div.dataset.step = idx;
+      div.innerHTML    = `
+        <input type="text" name="ingredient[]" class="form-control me-2"
+               placeholder="e.g. 2 cups flour" required>
+        <button type="button" class="remove-btn" onclick="removeStep(this)">
+          &times;
+        </button>`;
       container.appendChild(div);
     }
 
     function addInstruction() {
-      const container = document.getElementById('instructions-container');
-      const idx = container.children.length + 1;
-      const div = document.createElement('div');
-      div.className = 'step-input'; div.dataset.step = idx;
-      div.innerHTML = `
-        <textarea name="instructions"
-                  class="form-control"
-                  rows="2"
-                  placeholder="Step ${idx}"
-                  required></textarea>`;
+      const container = document.getElementById('instructions-container'),
+            idx       = container.children.length + 1,
+            div       = document.createElement('div');
+      div.className    = 'step-input';
+      div.dataset.step = idx;
+      div.innerHTML    = `
+        <textarea name="instruction[]" class="form-control mb-2"
+                  rows="2" placeholder="Step ${idx}"></textarea>
+        <button type="button" class="remove-btn" onclick="removeStep(this)">
+          &times;
+        </button>`;
       container.appendChild(div);
+    }
+
+    function removeStep(btn) {
+      btn.closest('.step-input').remove();
     }
   </script>
 </body>
