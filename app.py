@@ -168,19 +168,18 @@ def logout():
 @app.route("/upload", methods=["GET", "POST"])
 @login_required
 def upload():
+    message = None
+
     if request.method == "POST":
-        # Gather manual‐entry form data
+        # Gather manual-entry form data
         title        = request.form["title"]
         ingredients  = "\n".join(request.form.getlist("ingredient[]"))
         instructions = "\n".join(request.form.getlist("instruction[]"))
         is_public    = "is_public" in request.form
 
         # If this request came after an import, grab and clear the prefill
-        pre = session.pop("prefill_data", None)
-        image_url = None
-        if pre and pre.get("image"):
-            image_url = pre["image"]
-        print("🔍 image_url:", image_url)
+        pre         = session.pop("prefill_data", None)
+        image_url   = pre.get("image") if pre else None
 
         # Create & save recipe, including image if present
         new_recipe = Recipe(
@@ -189,7 +188,7 @@ def upload():
             instructions = instructions,
             is_public    = is_public,
             user_id      = current_user.id,
-            image        = image_url          # ← new field
+            image        = image_url
         )
         db.session.add(new_recipe)
         db.session.commit()
@@ -197,23 +196,17 @@ def upload():
         flash("Recipe uploaded!", "success")
         return redirect(url_for('home'))
 
-    # GET: render with any leftover prefill (title/ings/steps)  
+    # GET: render with any leftover prefill (title/ings/steps/image)  
+    prefill = session.get("prefill_data")
     return render_template(
         "upload_recipe.html",
         ingredients_list = list(INGREDIENTS_UNITS.keys()),
         units_map        = INGREDIENTS_UNITS,
-        prefill          = session.pop("prefill_data", None),
-        message          = None
+        prefill          = prefill,
+        message          = message
     )
 
-    # GET: render with any leftover prefill (title/ings/steps)  
-    return render_template(
-        "upload_recipe.html",
-        ingredients_list = list(INGREDIENTS_UNITS.keys()),
-        units_map        = INGREDIENTS_UNITS,
-        prefill          = session.pop("prefill_data", None),
-        message          = None
-    )
+
 
 @app.route("/upload-from-url", methods=["POST"])
 @login_required
